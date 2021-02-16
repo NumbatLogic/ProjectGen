@@ -92,7 +92,7 @@
 			else
 			{
 				$sOutput .= "CC = gcc\n";
-			//	$sOutput .= "CXX = g++\n";
+				$sOutput .= "CXX = g++\n";
 			//	$sOutput .= "AR = ar\n\n";
 			}
 
@@ -134,6 +134,10 @@
 						$sOutput .= "  DEFINES +=";
 							if ($sAction == ACTION_EMSCRIPTEN_GMAKE)
 								$sOutput .= " -DEMSCRIPTEN";
+
+							if ($sConfiguration == CONFIGURATION_DEBUG)
+								$sOutput .= " -DNB_DEBUG";
+							
 						$sOutput .= "\n"; // -D_EMSCRIPTEN -D_CRT_SECURE_NO_WARNINGS\n";
 
 						$sOutput .= "  INCLUDES +=";
@@ -169,7 +173,7 @@
 
 						//$sOutput .= "  ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)\n";
 						if ($sAction == ACTION_EMSCRIPTEN_GMAKE)
-							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . "\n";
+							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . " -Wno-dollar-in-identifier-extension\n";
 						else
 							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " -m" . ($sArchitecture == ARCHITECTURE_32 ? "32" : "64") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . "\n";
 						//-std=c89 -Werror -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition -pedantic -Wno-comment -Wno-newline-eof -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-empty-translation-unit\n";
@@ -213,7 +217,7 @@
 								$sExternalLibrary .= /*" -l" .*/ " " . $sDependancy;
 						}
 
-						$sOutput .= "  LDDEPS += " . $sExternalLibrary . $sInternalLibrary . "\n";
+						$sOutput .= "  LDDEPS += " . $sInternalLibrary . $sExternalLibrary . "\n";
 						$sOutput .= "  LIBS += $(LDDEPS)\n";
 
 
@@ -230,7 +234,7 @@
 						elseif ($pProject->GetKind() == KIND_STATIC_LIBRARY || $pProject->GetKind() == KIND_WORKER)
 							$sOutput .= "  LINKCMD = ar -rcs \$(TARGET) \$(OBJECTS)\n";
 						else
-							$sOutput .= "  LINKCMD = $(CC) -o \$(TARGET) \$(OBJECTS) \$(RESOURCES) \$(ARCH) \$(ALL_LDFLAGS) \$(LIBS)\n";
+							$sOutput .= "  LINKCMD = $(CXX) -o \$(TARGET) \$(OBJECTS) \$(RESOURCES) \$(ARCH) \$(ALL_LDFLAGS) \$(LIBS)\n";
 						
 						$sOutput .= "  define PREBUILDCMDS\n";
 						$sOutput .= "  endef\n";
@@ -317,6 +321,7 @@
 			$xFileArray = array($pProject->m_xFileArray);
 			$sDirectoryArray = array(ProjectGen_GetRelativePath(realpath($sBaseDirectory . "/" . $pProject->GetName()), $pProject->GetBaseDirectory()));
 			$nFileIndex = array(0);
+			$sPathArray = array("");
 
 			while (count($xFileArray) > 0)
 			{
@@ -327,6 +332,7 @@
 					array_pop($xFileArray);
 					array_pop($sDirectoryArray);
 					array_pop($nFileIndex);
+					array_pop($sPathArray);
 					continue;
 				}
 
@@ -338,6 +344,7 @@
 					$xFileArray[] = $xFile["xFileArray"];
 					$sDirectoryArray[] = $sDirectory . $xFile["sName"] . "/";
 					$nFileIndex[] = 0;
+					$sPathArray[] = $sPathArray[$nIndex] . $xFile["sName"] . "_";
 
 					$nFileIndex[$nIndex]++;
 					continue;
@@ -345,7 +352,7 @@
 
 				if ($xFile["sExtension"] == "c" || $xFile["sExtension"] == "cpp")
 				{
-					$sOutput .= "$(OBJDIR)/" . str_replace(array(".cpp", ".c"), array(".o", ".o"), $xFile["sName"]) . ": " . $sDirectory . $xFile["sName"] . "\n";
+					$sOutput .= "$(OBJDIR)/" . str_replace(array(".cpp", ".c"), array(".o", ".o"), $sPathArray[$nIndex] . $xFile["sName"]) . ": " . $sDirectory . $xFile["sName"] . "\n";
 						$sOutput .= "\t@echo $(notdir $<)\n";
 						$sOutput .= "\t$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o \"$@\" -MF $(@:%.o=%.d) -c \"$<\"\n\n";
 				}
