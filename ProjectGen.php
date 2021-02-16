@@ -6,6 +6,8 @@
 	define("ACTION_EMSCRIPTEN_GMAKE", "emscripten_gmake");
 	define("ACTION_IOS_XCODE", "ios_xcode");
 	define("ACTION_ANDROID_CMAKE", "android_cmake");
+	define("ACTION_LINUX_GMAKE", "linux_gmake");
+	define("ACTION_ESP_IDF", "esp_idf");
 
 	define("CONFIGURATION_DEBUG", "debug");
 	define("CONFIGURATION_RELEASE", "release");
@@ -33,6 +35,8 @@
 				case ACTION_EMSCRIPTEN_GMAKE: return ACTION_EMSCRIPTEN_GMAKE;
 				case ACTION_IOS_XCODE: return ACTION_IOS_XCODE;
 				case ACTION_ANDROID_CMAKE: return ACTION_ANDROID_CMAKE;
+				case ACTION_LINUX_GMAKE: return ACTION_LINUX_GMAKE;
+				case ACTION_ESP_IDF: return ACTION_ESP_IDF;
 			}
 		}
 
@@ -127,6 +131,10 @@
 		// ios && android
 		public function GetBundleIdentifier() { throw new Exception("Bundle identifier not set for " . $this->GetName()); }
 
+		public function GetIcon() { return ""; }
+		public function GetIconMask() { return ""; }
+		public function GetFriendlyName() { return $this->GetName(); }
+
 		public function GetBuildOptionArray($sConfiguration, $sArchitecture) { return array(); }
 
 		public function GetLinkFlags($sConfiguration, $sArchitecture) { return ""; }
@@ -161,6 +169,7 @@
 	include_once dirname(__FILE__) . "/ProjectGen_Xcode.php";
 	include_once dirname(__FILE__) . "/ProjectGen_Gmake.php";
 	include_once dirname(__FILE__) . "/ProjectGen_Cmake.php";
+	include_once dirname(__FILE__) . "/ProjectGen_Esp_Idf.php";
 	
 	function ProjectGen($pSolution)
 	{
@@ -383,7 +392,7 @@
 
 
 				$sOutput .= "\t<Files>\n";
-					$sOutput .= ProjectGen_vcproj_OutputDirectory($pProject->m_xFileArray, "\t\t");
+					$sOutput .= ProjectGen_vcproj_OutputDirectory($pProject->m_xFileArray, "\\", "\t\t");
 				$sOutput .= "\t</Files>\n";
 
 
@@ -437,7 +446,7 @@
 				file_put_contents($sBaseDirectory . "/" . $pProject->GetName() . "/" . $pProject->GetName() . ".vcproj." . getenv("computername") . "." . getenv("username") . ".user", $sOutput);
 			}
 		}
-		else if ($sAction == ACTION_OSX_GMAKE || $sAction == ACTION_EMSCRIPTEN_GMAKE)
+		else if ($sAction == ACTION_OSX_GMAKE || $sAction == ACTION_EMSCRIPTEN_GMAKE || $sAction == ACTION_LINUX_GMAKE)
 		{
 			ProjetGen_Gmake_Output($pSolution, $sAction);
 		}
@@ -448,6 +457,10 @@
 		else if ($sAction == ACTION_ANDROID_CMAKE)
 		{
 			ProjectGen_Cmake_Output($pSolution, $sAction);
+		}
+		else if ($sAction == ACTION_ESP_IDF)
+		{
+			ProjectGen_Esp_Idf_Output($pSolution, $sAction);
 		}
 	}
 
@@ -487,7 +500,7 @@
 			}
 			else
 			{
-				$sFileArray[] = $xFile["sName"];
+				$sFileArray[] = /*str_replace("/", "_", */($sPath == "" ? "" : ($sPath . "/"))/*)*/ . $xFile["sName"];
 			}
 		}
 
@@ -588,7 +601,7 @@
 		return $sIn;
 	}
 
-	function ProjectGen_vcproj_OutputDirectory($xFileArray, $sTab)
+	function ProjectGen_vcproj_OutputDirectory($xFileArray, $sParentPath, $sTab)
 	{
 		global $g_sConfigurationArray;
 		global $g_sArchitectureArray;
@@ -600,20 +613,24 @@
 			if ($xFile["sType"] == FILE_TYPE_DIRECTORY)
 			{
 				$sOuptut .= $sTab . "<Filter Name=\"" . $xFile["sName"] . "\" Filter=\"\">\n";
-				$sOuptut .= ProjectGen_vcproj_OutputDirectory($xFile["xFileArray"], $sTab . "\t");
+				$sOuptut .= ProjectGen_vcproj_OutputDirectory($xFile["xFileArray"], $sParentPath . $xFile["sName"] . "\\", $sTab . "\t");
 				$sOuptut .= $sTab . "</Filter>\n"; 
 			}
 			else
 			{
 				$sOuptut .= $sTab . "<File RelativePath=\"" . $xFile["sPath"] . "\">\n";
-				if ($xFile["sExtension"] == "c")
+				if ($xFile["sExtension"] == "c" || $xFile["sExtension"] == "cpp")
 				{
+					$nCompileAs = 1;
+					if ($xFile["sExtension"] == "cpp")
+						$nCompileAs = 2;
+
 					foreach ($g_sConfigurationArray as $sConfiguration)
 					{
 						foreach ($g_sArchitectureArray as $sArchitecture)
 						{
 							$sOuptut .= $sTab . "\t<FileConfiguration Name=\"" . ProjectGen_vs2008_Translate($sConfiguration) . "|" . ProjectGen_vs2008_Translate($sArchitecture) . "\">\n";
-							$sOuptut .= $sTab . "\t\t<Tool Name=\"VCCLCompilerTool\" CompileAs=\"1\"/>\n";
+							$sOuptut .= $sTab . "\t\t<Tool Name=\"VCCLCompilerTool\" CompileAs=\"" . $nCompileAs . "\" ObjectFile=\"$(IntDir)" . $sParentPath . "\"/>\n";
 							$sOuptut .= $sTab . "\t</FileConfiguration>\n";
 						}
 					}
@@ -623,6 +640,17 @@
 			}
 		}
 		return $sOuptut;
+	}
+
+
+
+	function ProjectGen_SvgRender($sIconPath, $sMaskPath, $sOutputPath, $nSize)
+	{
+		$sExe = "SvgRender";
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
+			$sExe .= ".exe";
+		system("\"../Tool/" . $sExe . "\" \"" . $sIconPath . "\" \"" . $sOutputPath . "\" \"" . $nSize . "\" \"" . $sMaskPath . "\"");
+		return true;
 	}
 
 	

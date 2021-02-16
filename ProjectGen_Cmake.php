@@ -81,14 +81,12 @@
 				}
 				$sResult .= "]";
 			}
+			else if ($this->m_sType == "haxstring")
+			{
+				$sResult .= $this->m_pValue . "\n";
+			}
 			return $sResult;
 		}
-	}
-
-	function ProjectGen_Cmake_RenderIcon($sIconPath, $sOutputPath, $nSize)
-	{
-		system("\"../Tool/SvgRender.exe\" " . $sIconPath . " " . $sOutputPath . " " . $nSize);
-		return true;
 	}
 
 	function ProjectGen_Cmake_Output($pSolution, $sAction)
@@ -112,6 +110,11 @@
 
 			if ($pProject->GetKind() == KIND_CONSOLE_APP)
 			{
+				$sPath = $pProject->GetBaseDirectory() . "/google-services.json";
+
+				if (file_exists($sPath))
+					copy($sPath, $sModuleBaseDirectory . "google-services.json");
+
 				$pGradleBuild = new GradleSettings(
 					array(
 						// HAX_BB hardcode using zero length string element
@@ -119,7 +122,7 @@
 						new GradleElement("group", "android",
 							array(
 								new GradleElement("number", "compileSdkVersion", 24),
-								new GradleElement("string", "buildToolsVersion", "24.0.3"),
+								new GradleElement("string", "buildToolsVersion", "25.0.0"),
 								new GradleElement("group", "defaultConfig",
 									array(
 										new GradleElement("string", "applicationId", $pProject->GetBundleIdentifier()),
@@ -127,7 +130,7 @@
 										new GradleElement("number", "targetSdkVersion", 24),
 										new GradleElement("number", "versionCode", 1),
 										new GradleElement("string", "versionName", "1.0"),
-										new GradleElement("group", "ndk", array(new GradleElement("string", "abiFilters \"armeabi\", \"armeabi-v7a\", \"x86\", \"mips\"", ""))),
+										new GradleElement("group", "ndk", array(new GradleElement("string", "abiFilters \"armeabi\", \"armeabi-v7a\", \"x86\"", ""))), // , \"mips\"
 										new GradleElement("group", "externalNativeBuild", array(new GradleElement("group", "cmake", array()))),
 										)
 									),
@@ -182,9 +185,12 @@
 						new GradleElement("group", "dependencies",
 							array(
 								//new GradleElement("string", "compile fileTree(include: ['*.jar'], dir: 'libs')", ""),
-								new GradleElement("string", "compile 'com.android.support:appcompat-v7:24.2.1'", "")
+								new GradleElement("string", "compile 'com.android.support:appcompat-v7:24.2.1'", ""),
+								new GradleElement("string", "compile 'com.google.firebase:firebase-ads:10.2.0'", "")
+
 								)
 							),
+						new GradleElement("string", "apply plugin: 'com.google.gms.google-services'", ""),
 						)
 					);
 				file_put_contents($sModuleBaseDirectory . "/build.gradle", $pGradleBuild->ToString());
@@ -193,6 +199,7 @@
 
 				// AndroidManifest.xml
 				$pXmlFile = new DOMDocument('1.0', 'UTF-8');
+				$pXmlFile->formatOutput = true;
 
 				$pManifest = $pXmlFile->appendChild($pXmlFile->createElement("manifest"));
 					$pManifest->setAttribute("xmlns:android", "http://schemas.android.com/apk/res/android");
@@ -245,40 +252,40 @@
 					if (!is_dir($sFolder))
 						mkdir($sFolder);
 
-						if (!ProjectGen_Cmake_RenderIcon($pProject->GetIcon(), $sFolder . "ic_launcher.png", 72))
-							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "\n\t" . $sFolder . "ic_launcher.png\n";
+						if (!ProjectGen_SvgRender($pProject->GetIcon(), $pProject->GetIconMask(), $sFolder . "ic_launcher.png", 72))
+							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "~" . $pProject->GetIconMask() . "\n\t" . $sFolder . "ic_launcher.png\n";
 
 					// mipmap-mdpi
 					$sFolder = $sModuleBaseDirectory . "res/mipmap-mdpi/";
 					if (!is_dir($sFolder))
 						mkdir($sFolder);
 
-						if (!ProjectGen_Cmake_RenderIcon($pProject->GetIcon(), $sFolder . "ic_launcher.png", 48))
-							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "\n\t" . $sFolder . "ic_launcher.png\n";
+						if (!ProjectGen_SvgRender($pProject->GetIcon(), $pProject->GetIconMask(), $sFolder . "ic_launcher.png", 48))
+							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "~" . $pProject->GetIconMask() . "\n\t" . $sFolder . "ic_launcher.png\n";
 
 					// mipmap-xhdpi
 					$sFolder = $sModuleBaseDirectory . "res/mipmap-xhdpi/";
 					if (!is_dir($sFolder))
 						mkdir($sFolder);
 
-						if (!ProjectGen_Cmake_RenderIcon($pProject->GetIcon(), $sFolder . "ic_launcher.png", 96))
-							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "\n\t" . $sFolder . "ic_launcher.png\n";
+						if (!ProjectGen_SvgRender($pProject->GetIcon(), $pProject->GetIconMask(), $sFolder . "ic_launcher.png", 96))
+							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "~" . $pProject->GetIconMask() . "\n\t" . $sFolder . "ic_launcher.png\n";
 
 					// mipmap-xxhdpi
 					$sFolder = $sModuleBaseDirectory . "res/mipmap-xxhdpi/";
 					if (!is_dir($sFolder))
 						mkdir($sFolder);
 
-						if (!ProjectGen_Cmake_RenderIcon($pProject->GetIcon(), $sFolder . "ic_launcher.png", 144))
-							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "\n\t" . $sFolder . "ic_launcher.png\n";
+						if (!ProjectGen_SvgRender($pProject->GetIcon(), $pProject->GetIconMask(), $sFolder . "ic_launcher.png", 144))
+							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "~" . $pProject->GetIconMask() . "\n\t" . $sFolder . "ic_launcher.png\n";
 
 					// mipmap-xxxhdpi
 					$sFolder = $sModuleBaseDirectory . "res/mipmap-xxxhdpi/";
 					if (!is_dir($sFolder))
 						mkdir($sFolder);
 
-						if (!ProjectGen_Cmake_RenderIcon($pProject->GetIcon(), $sFolder . "ic_launcher.png", 192))
-							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "\n\t" . $sFolder . "ic_launcher.png\n";
+						if (!ProjectGen_SvgRender($pProject->GetIcon(), $pProject->GetIconMask(), $sFolder . "ic_launcher.png", 192))
+							echo "*** Icon bad:\n\t" . $pProject->GetIcon() . "~" . $pProject->GetIconMask() . "\n\t" . $sFolder . "ic_launcher.png\n";
 
 					// values
 					$sFolder = $sModuleBaseDirectory . "res/values/";
@@ -371,13 +378,16 @@
 							new GradleElement("group", "repositories", array(new GradleElement("function", "jcenter", ""))),
 							new GradleElement("group", "dependencies",
 								array(
-									new GradleElement("string", "classpath", "com.android.tools.build:gradle:2.2.0")
+									new GradleElement("string", "classpath", "com.android.tools.build:gradle:2.2.0"),
+									new GradleElement("string", "classpath", "com.google.gms:google-services:3.0.0")
+
 									)
 								)
 							)
 						),
 					new GradleElement("group", "allprojects",
-						array(
+						array (
+							new GradleElement("haxstring", "", "if (org.gradle.internal.os.OperatingSystem.current().isWindows()) { buildDir = \"C:/tmp/\${rootProject.name}/\${project.name}\" }"),
 							new GradleElement("group", "repositories", array(new GradleElement("function", "jcenter", ""))),
 							)
 						)
