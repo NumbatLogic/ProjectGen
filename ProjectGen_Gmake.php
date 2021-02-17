@@ -21,7 +21,7 @@
 		$sOutput = "";
 
 		$sOutput .= "ifndef config\n";
-			$sOutput .= "  config=debug32\n";
+			$sOutput .= "  config=debugx32\n";
 		$sOutput .= "endif\n";
 		$sOutput .= "export config\n\n";
 
@@ -76,7 +76,7 @@
 			$pProject = $pSolution->m_pProjectArray[$i];
 			$sOutput = "";
 			$sOutput .= "ifndef config\n";
-				$sOutput .= "  config=debug32\n";
+				$sOutput .= "  config=debugx32\n";
 			$sOutput .= "endif\n\n";
 
 			$sOutput .= "ifndef verbose\n";
@@ -108,7 +108,7 @@
 			{
 				foreach ($g_sArchitectureArray as $sArchitecture)
 				{
-					$sOutput .= "ifeq ($(config)," . $sConfiguration . ($sArchitecture == ARCHITECTURE_32 ? "32" : "64") . ")\n";
+					$sOutput .= "ifeq ($(config)," . $sConfiguration . $sArchitecture . ")\n";
 						$sOutput .= "  OBJDIR = obj/" . $sArchitecture . "/" . $sConfiguration . "\n";
 						$sOutput .= "  TARGETDIR = ../../../../Bin\n";
 
@@ -173,9 +173,21 @@
 
 						//$sOutput .= "  ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)\n";
 						if ($sAction == ACTION_EMSCRIPTEN_GMAKE)
+						{
 							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . " -Wno-dollar-in-identifier-extension\n";
+						}
 						else
-							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " -m" . ($sArchitecture == ARCHITECTURE_32 ? "32" : "64") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . "\n";
+						{
+							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g");
+							switch ($sArchitecture)
+							{
+								case ARCHITECTURE_32: $sOutput .= " -m32"; break;
+								case ARCHITECTURE_64: $sOutput .= " -m64"; break;
+								case ARCHITECTURE_ARM_32: $sOutput .= " -march=armv8-a"; break; // wrong
+								case ARCHITECTURE_ARM_64: $sOutput .= " -march=armv8-a"; break;
+							}
+							$sOutput .= " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . "\n";
+						}
 						//-std=c89 -Werror -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition -pedantic -Wno-comment -Wno-newline-eof -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-empty-translation-unit\n";
 						//else
 						//	$sOutput .= "  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -Werror -g -m" . ($sArchitecture == ARCHITECTURE_32 ? "32" : "64") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . "\n";
@@ -185,13 +197,21 @@
 					//	$sOutput .= "  ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)\n";
 						
 						if ($sAction == ACTION_EMSCRIPTEN_GMAKE)
+						{
 							$sOutput .= "  ALL_LDFLAGS += \$(LDFLAGS)" . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "")  . " " . $pProject->GetLinkFlags($sConfiguration, $sArchitecture) . "\n";
+						}
 						else
-							$sOutput .= "  ALL_LDFLAGS += \$(LDFLAGS)" . ($sConfiguration == CONFIGURATION_RELEASE ? " -s" : "")  . " -m" . ($sArchitecture == ARCHITECTURE_32 ? "32" : "64") . " " . $pProject->GetLinkFlags($sConfiguration, $sArchitecture) . "\n";
-
-
-						//-L/usr/lib" . ($sArchitecture == ARCHITECTURE_32 ? "32" : "64") . " 
-						
+						{
+							$sOutput .= "  ALL_LDFLAGS += \$(LDFLAGS)" . ($sConfiguration == CONFIGURATION_RELEASE ? " -s" : "");
+							switch ($sArchitecture)
+							{
+								case ARCHITECTURE_32: $sOutput .= " -m32"; break;
+								case ARCHITECTURE_64: $sOutput .= " -m64"; break;
+								case ARCHITECTURE_ARM_32: $sOutput .= " -march=armv8-a"; break; // wrong
+								case ARCHITECTURE_ARM_64: $sOutput .= " -march=armv8-a"; break;
+							}
+							$sOutput .= " " . $pProject->GetLinkFlags($sConfiguration, $sArchitecture) . "\n";
+						}
 						
 						$sDependancyArray = ProjectGen_GetRecursiveDependancyArray($pSolution, $pProject);
 						
