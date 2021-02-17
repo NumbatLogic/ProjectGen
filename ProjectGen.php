@@ -13,7 +13,9 @@
 	define("CONFIGURATION_RELEASE", "release");
 	
 	define("ARCHITECTURE_32", "x32");
-	define("ARCHITECTURE_64", "x64");
+	define("ARCHITECTURE_64", "x64");	
+	define("ARCHITECTURE_ARM_32", "a32");
+	define("ARCHITECTURE_ARM_64", "a64");
 
 	define("KIND_CONSOLE_APP", "ConsoleApp");
 	define("KIND_STATIC_LIBRARY", "StaticLib");
@@ -164,6 +166,8 @@
 		//"Win32", "x64"
 		ARCHITECTURE_32,
 		ARCHITECTURE_64,
+		ARCHITECTURE_ARM_32,
+		ARCHITECTURE_ARM_64
 	);
 
 	include_once dirname(__FILE__) . "/ProjectGen_Xcode.php";
