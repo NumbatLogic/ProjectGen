@@ -150,23 +150,35 @@
 			$xObject = array(
 				"isa" => "XCBuildConfiguration",
 				"buildSettings" => array(
-					"ENABLE_BITCODE" => "NO", // enable one day, disabled for admob
+					//"ENABLE_BITCODE" => "NO", // enable one day, disabled for admob
 					"ALWAYS_SEARCH_USER_PATHS" => "NO",
 					"CLANG_CXX_LANGUAGE_STANDARD" => "\"gnu++0x\"",
 					"CLANG_CXX_LIBRARY" => "\"libc++\"",
 					"CLANG_ENABLE_MODULES" => "YES",
 					"CLANG_ENABLE_OBJC_ARC" => "YES",
+					"CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING" => "YES",
 					"CLANG_WARN_BOOL_CONVERSION" => "YES",
+					"CLANG_WARN_COMMA" => "YES",
 					"CLANG_WARN_CONSTANT_CONVERSION" => "YES",
+					"CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS" => "YES",
 					"CLANG_WARN_DIRECT_OBJC_ISA_USAGE" => "YES_ERROR",
 					"CLANG_WARN_EMPTY_BODY" => "YES",
 					"CLANG_WARN_ENUM_CONVERSION" => "YES",
+					"CLANG_WARN_INFINITE_RECURSION" => "YES",
 					"CLANG_WARN_INT_CONVERSION" => "YES",
+					"CLANG_WARN_NON_LITERAL_NULL_CONVERSION" => "YES",
+					"CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF" => "YES",
+					"CLANG_WARN_OBJC_LITERAL_CONVERSION" => "YES",
 					"CLANG_WARN_OBJC_ROOT_CLASS" => "YES_ERROR",
+					"CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER" => "YES",
+					"CLANG_WARN_RANGE_LOOP_ANALYSIS" => "YES",
+					"CLANG_WARN_STRICT_PROTOTYPES" => "YES",
+					"CLANG_WARN_SUSPICIOUS_MOVE" => "YES",
 					"CLANG_WARN_UNREACHABLE_CODE" => "YES",
 					"CLANG_WARN__DUPLICATE_METHOD_MATCH" => "YES",
 					"ENABLE_STRICT_OBJC_MSGSEND" => "YES",
 					"GCC_C_LANGUAGE_STANDARD" => "gnu99",
+					"GCC_NO_COMMON_BLOCKS" => "YES",
 					"GCC_WARN_64_TO_32_BIT_CONVERSION" => "YES",
 					"GCC_WARN_ABOUT_RETURN_TYPE" => "YES_ERROR",
 					"GCC_WARN_UNDECLARED_SELECTOR" => "YES",
@@ -177,7 +189,7 @@
 						"\"$(inherited)\"",
 						"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
 					),
-					"IPHONEOS_DEPLOYMENT_TARGET" => "8.1",
+					"IPHONEOS_DEPLOYMENT_TARGET" => "9.0",
 					"ONLY_ACTIVE_ARCH" => "YES",
 					"SDKROOT" => "iphoneos",
 				),
@@ -260,7 +272,7 @@
 					../../../Library/iOs/libcurl/include,
 				);*/
 				$xObject["buildSettings"]["INFOPLIST_FILE"] = $pProject->GetName() . ".plist";
-				$xObject["buildSettings"]["IPHONEOS_DEPLOYMENT_TARGET"] = "8.1"; // dupe?
+				$xObject["buildSettings"]["IPHONEOS_DEPLOYMENT_TARGET"] = "9.0"; // dupe?
 				$xObject["buildSettings"]["LD_RUNPATH_SEARCH_PATHS"] = "\"$(inherited) @executable_path/Frameworks\"";
 				/*LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -384,9 +396,9 @@
 			),
 			"buildConfigurationList" => ProjetGen_Xcode_Project_GetKey($pProject, "XCConfigurationList PBXProject " . $pProject->GetName()),
 			"compatibilityVersion" => "\"Xcode 3.2\"",
-			"developmentRegion" => "English",
+			"developmentRegion" => "en",
 			"hasScannedForEncodings" => 0,
-			"knownRegions" => array("en"),
+			"knownRegions" => array("Base", "en"),
 			"mainGroup" => ProjetGen_Xcode_Project_GetKey($pProject, "PBXGroup mainGroup"),
 			"productRefGroup" => ProjetGen_Xcode_Project_GetKey($pProject, "PBXGroup Products"),
 			"projectDirPath" => "\"\"",

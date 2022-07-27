@@ -5,9 +5,10 @@
 	define("ACTION_OSX_GMAKE", "osx_gmake");
 	define("ACTION_EMSCRIPTEN_GMAKE", "emscripten_gmake");
 	define("ACTION_IOS_XCODE", "ios_xcode");
-	define("ACTION_ANDROID_CMAKE", "android_cmake");
+	define("ACTION_ANDROID_GRADLE", "android_gradle");
 	define("ACTION_LINUX_GMAKE", "linux_gmake");
 	define("ACTION_ESP_IDF", "esp_idf");
+	define("ACTION_CMAKE", "cmake");
 
 	define("CONFIGURATION_DEBUG", "debug");
 	define("CONFIGURATION_RELEASE", "release");
@@ -36,9 +37,10 @@
 				case ACTION_OSX_GMAKE: return ACTION_OSX_GMAKE;
 				case ACTION_EMSCRIPTEN_GMAKE: return ACTION_EMSCRIPTEN_GMAKE;
 				case ACTION_IOS_XCODE: return ACTION_IOS_XCODE;
-				case ACTION_ANDROID_CMAKE: return ACTION_ANDROID_CMAKE;
+				case ACTION_ANDROID_GRADLE: return ACTION_ANDROID_GRADLE;
 				case ACTION_LINUX_GMAKE: return ACTION_LINUX_GMAKE;
 				case ACTION_ESP_IDF: return ACTION_ESP_IDF;
+				case ACTION_CMAKE: return ACTION_CMAKE;
 			}
 		}
 
@@ -172,9 +174,10 @@
 
 	include_once dirname(__FILE__) . "/ProjectGen_Xcode.php";
 	include_once dirname(__FILE__) . "/ProjectGen_Gmake.php";
-	include_once dirname(__FILE__) . "/ProjectGen_Cmake.php";
+	include_once dirname(__FILE__) . "/ProjectGen_Gradle.php";
 	include_once dirname(__FILE__) . "/ProjectGen_Esp_Idf.php";
-	
+	include_once dirname(__FILE__) . "/ProjectGen_Cmake.php";
+
 	function ProjectGen($pSolution)
 	{
 		global $g_sConfigurationArray;
@@ -458,13 +461,17 @@
 		{
 			ProjetGen_Xcode_Output($pSolution, $sAction);
 		}
-		else if ($sAction == ACTION_ANDROID_CMAKE)
+		else if ($sAction == ACTION_ANDROID_GRADLE)
 		{
-			ProjectGen_Cmake_Output($pSolution, $sAction);
+			ProjectGen_Gradle_Output($pSolution, $sAction);
 		}
 		else if ($sAction == ACTION_ESP_IDF)
 		{
 			ProjectGen_Esp_Idf_Output($pSolution, $sAction);
+		}
+		else if ($sAction == ACTION_CMAKE)
+		{
+			ProjectGen_Cmake_Output($pSolution, $sAction);
 		}
 	}
 
@@ -653,6 +660,8 @@
 		$sExe = "SvgRender";
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
 			$sExe .= ".exe";
+		if (strtoupper(substr(PHP_OS, 0, 5)) === 'LINUX')
+			$sExe .= ".linux";
 		system("\"../Tool/" . $sExe . "\" \"" . $sIconPath . "\" \"" . $sOutputPath . "\" \"" . $nSize . "\" \"" . $sMaskPath . "\"");
 		return true;
 	}
