@@ -273,7 +273,7 @@
 			foreach ($sFileArray as $sFile)
 			{
 				if (strstr($sFile, ".c") !== FALSE)
-					$sOutput .= "  \$(OBJDIR)/" . str_replace(array(".cpp", ".c"), array(".o", ".o"), $sFile) . " \\\n";
+					$sOutput .= "  \$(OBJDIR)/" . str_replace(array(".cpp", ".c"), array(".o", ".o"), str_replace("/", "_", $sFile)) . " \\\n";
 
 			}
 

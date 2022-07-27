@@ -78,7 +78,66 @@
 					}
 				$sOutput .= "\n";
 
-				$sOutput .= "\tINCLUDE_DIRS \"\"\n";
+				$sOutput .= "\tINCLUDE_DIRS ";
+
+
+
+				$sIncludeDirectoryArray = $pProject->GetIncludeDirectoryArray(CONFIGURATION_DEBUG, ARCHITECTURE_32);
+				for ($j = 0; $j < count($sIncludeDirectoryArray); $j++)
+				{
+					echo "***\n";
+					echo $sBaseDirectory . "\n";
+					echo $pProject->GetBaseDirectory() . "\n";
+					echo $sIncludeDirectoryArray[$j] . "\n";
+
+					echo realpath($sBaseDirectory) . "\n";
+					echo realpath($pProject->GetBaseDirectory() . "/" . $sIncludeDirectoryArray[$j]) . "\n";
+
+
+
+
+					$sIncludePath = $sIncludeDirectoryArray[$j];
+					if ($sIncludePath[0] != "/")
+					{
+						$sIncludePath = realpath($pProject->GetBaseDirectory() . "/" . $sIncludeDirectoryArray[$j]);
+						if ($sIncludePath === false)
+							throw new Exception("Include path not found for " . $pProject->GetName() . ": " . $sIncludeDirectoryArray[$j]);
+					}
+
+					$sIncludePath = str_replace("\\", "/", $sIncludePath);
+
+					$sOutput .= " \"" . $sIncludePath . "\"";
+
+					echo "inc: " . $sIncludePath . "\n";
+					echo realpath($sBaseDirectory . "/" . $pProject->GetName()) . "\n";
+					echo  " \"" . $sIncludePath . "\"\n\n\n";
+				}
+
+				if (count($sIncludeDirectoryArray) == 0)
+					$sOutput .= " \"\"";
+
+				$sOutput .= "\n";
+
+
+
+
+
+				$sOutput .= " REQUIRES fatfs sdmmc";
+
+				$sDependancyArray = $pProject->GetDependancyArray();
+				for ($j = 0; $j < count($sDependancyArray); $j++)
+				{
+					$sDependancy = $sDependancyArray[$j];
+					$pDependancy = $pSolution->GetProjectByName($sDependancy);
+					if ($pDependancy)
+						$sOutput .= " " . $sDependancy;
+				}
+
+				$sOutput .= "\n";
+
+
+
+
 				//$sOutput .= "\tREQUIRES spi_flash\n";
 				$sOutput .= "\t)\n";
 				$sOutput .= "\ttarget_compile_options(\${COMPONENT_LIB} PRIVATE -Wno-maybe-uninitialized -Wno-misleading-indentation -Wno-error=unknown-pragmas -Wno-missing-field-initializers -Wno-unused-but-set-variable -Wno-implicit-fallthrough -Wno-delete-non-virtual-dtor)\n";
