@@ -154,7 +154,7 @@
 				}
 				case FILE_TYPE_FILE:
 				{
-					if ($xFile["sExtension"] == "c" || $xFile["sExtension"] == "cpp")
+					if ($xFile["sExtension"] == "c" || $xFile["sExtension"] == "cpp" || $xFile["sExtension"] == "h")
 					{
 						$xOutputFileArray[] = &$xFile["sPath"];
 					}
