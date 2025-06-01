@@ -10,8 +10,10 @@
 
 		$sProjectMakefile = "";
 		$sProjectMakefile .= "project(" . $pSolution->GetName() . ")\n\n";
-		$sProjectMakefile .= "cmake_minimum_required(VERSION 3.18.1)\n\n";
+		$sProjectMakefile .= "cmake_minimum_required(VERSION 3.13.4)\n\n";
 		$sProjectMakefile .= "set(CMAKE_POSITION_INDEPENDENT_CODE ON)\n\n";
+		$sProjectMakefile .= "set(CMAKE_CXX_FLAGS  \"\${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter -Wno-logical-op-parentheses -Wno-unused-variable -Wno-dangling-else -Wno-switch -Wno-unused-but-set-variable\")\n\n";
+
 		//-DCMAKE_CXX_FLAGS="-fPIC"
 		//$sProjectMakefile .= "add_definitions(-DCMAKE_PLATFORM_ANDROID)\n";
 		$sProjectLibraries = "";
@@ -19,7 +21,7 @@
 		{
 			$pProject = $pSolution->m_pProjectArray[$i];
 
-			ProjectGen_Cmake_Project_Output($pSolution, $pProject, $sModuleBaseDirectory);
+			ProjectGen_Cmake_Project_Output($pSolution, $pProject, $sModuleBaseDirectory, $sAction);
 
 			
 
@@ -37,10 +39,11 @@
 		file_put_contents($sModuleBaseDirectory . "/CMakeLists.txt", $sProjectMakefile);
 	}
 
-	function ProjectGen_Cmake_Project_Output($pSolution, $pProject, $sBaseDirectory)
+	function ProjectGen_Cmake_Project_Output($pSolution, $pProject, $sBaseDirectory, $sAction)
 	{
 		$sOutput = "";
 
+		$sDefineArray = $pSolution->GetDefineArray($sAction);
 
 	//$sFileArray = ProjectGen_FlattenFileArray($pProject->m_xFileArray, "");
 
@@ -91,6 +94,17 @@
 				. "\t)\n";
 		}
 
+		$sOutput .= "add_compile_definitions(NB_DEBUG)\n";
+		$sOutput .= "add_compile_definitions(DEBUG)\n";
+
+		if (count($sDefineArray) > 0)
+			for ($j = 0; $j < count($sDefineArray); $j++)
+				$sOutput .= "add_compile_definitions(" . $sDefineArray[$j] . ")\n";
+
+		$sBuildOptions = implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture));
+
+		if (strlen($sBuildOptions) > 0)
+			$sOutput .= "add_compile_options(" . $sBuildOptions . ")\n";
 
 		if ($pProject->GetKind() == KIND_CONSOLE_APP)
 		{

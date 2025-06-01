@@ -59,7 +59,7 @@
 			"}";
 	}
 	
-	function ProjectGen_ParseDirectory($sDirectory, $sRegex)
+	function ProjectGen_ParseDirectory($sDirectory, $sRegex, $sAllowedDirectoryArray = array())
 	{
 		$xFileArray = array();
 
@@ -70,7 +70,10 @@
 					{
 						if (is_dir($sDirectory . "/" . $sFile))
 						{
-							$xFileArray[] = array("sType" => FILE_TYPE_DIRECTORY, "sName" => $sFile, "xFileArray" => ProjectGen_ParseDirectory($sDirectory . "/" . $sFile, $sRegex));
+							if (count($sAllowedDirectoryArray) == 0 || in_array($sFile, $sAllowedDirectoryArray))
+							{
+								$xFileArray[] = array("sType" => FILE_TYPE_DIRECTORY, "sName" => $sFile, "xFileArray" => ProjectGen_ParseDirectory($sDirectory . "/" . $sFile, $sRegex));
+							}
 							continue;
 						}
 						
@@ -113,6 +116,20 @@
 			}
 			return NULL;
 		}
+
+		public function GetDefineArray($sAction)
+		{
+			$sArray = array();
+
+			for ($i = 0; $i < count($this->m_pProjectArray); $i++)
+			{
+				$pProject = $this->m_pProjectArray[$i];
+				$sArray[] = "PROJECT_" . strtoupper($pProject->GetName());
+				$sArray = array_merge($sArray, $pProject->GetGlobalDefineArray($sAction));
+			}
+
+			return $sArray;
+		}
 	}
 
 	abstract class Project_Config
@@ -131,6 +148,8 @@
 		abstract public function GetKind();
 		abstract public function GetBaseDirectory();
 
+		public $m_bHasPlatform = FALSE;
+
 
 		// ios && android
 		public function GetBundleIdentifier() { throw new Exception("Bundle identifier not set for " . $this->GetName()); }
@@ -138,6 +157,8 @@
 		public function GetIcon() { return ""; }
 		public function GetIconMask() { return ""; }
 		public function GetFriendlyName() { return $this->GetName(); }
+
+		public function GetGlobalDefineArray($sAction) { return array(); }
 
 		public function GetBuildOptionArray($sConfiguration, $sArchitecture) { return array(); }
 
@@ -317,6 +338,7 @@
 									" UsePrecompiledHeader=\"0\"" .
 									" WarningLevel=\"3\"" .
 									" WarnAsError=\"true\"" .
+									" DisableSpecificWarnings=\"4482\"" . // enums fo nll
 									" ProgramDataBaseFileName=\"$(OutDir)\\" . $pProject->GetName() . ".pdb\"" .
 									" DebugInformationFormat=\"" . ($sConfiguration == CONFIGURATION_DEBUG ? ($sArchitecture == ARCHITECTURE_32 ? "4" : "3") : "0") . "\"" .
 								"/>\n";
