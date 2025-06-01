@@ -130,8 +130,8 @@
 										new GradleElement("string", "applicationId", $pProject->GetBundleIdentifier()),
 										new GradleElement("number", "minSdkVersion", 15),
 										new GradleElement("number", "targetSdkVersion", 31),
-										new GradleElement("number", "versionCode", 1),
-										new GradleElement("string", "versionName", "1.0"),
+										new GradleElement("number", "versionCode", 10),
+										new GradleElement("string", "versionName", "1.0.6"),
 										new GradleElement("group", "ndk", array(new GradleElement("string", "abiFilters \"arm64-v8a\", \"armeabi-v7a\", \"x86\", \"x86_64\"", ""))), // , \"mips\" 
 										new GradleElement("group", "externalNativeBuild",
 											array(
@@ -454,6 +454,8 @@
 	{
 		$sOutput = "";
 
+		$sDefineArray = $pSolution->GetDefineArray($sAction);
+
 
 	//$sFileArray = ProjectGen_FlattenFileArray($pProject->m_xFileArray, "");
 
@@ -503,6 +505,11 @@
 				. $sIncludes
 				. "\t)\n";
 		}
+
+		if (count($sDefineArray) > 0)
+			for ($j = 0; $j < count($sDefineArray); $j++)
+				$sOutput .= "add_compile_definitions(" . $sDefineArray[$j] . ")\n";
+
 		{
 			$sOutput .=
 				"add_library(\n"
@@ -516,7 +523,7 @@
 			$sProjectLibraries = "\t" . $pProject->GetName() . "\n";
 
 			// HAX_BB android sdk libs
-			if ($pProject->GetName() == "NewClient" || $pProject->GetName() == "Engine")
+			if ($pProject->GetName() == "Client" || $pProject->GetName() == "Engine")
 			{
 				$sProjectLibraries .= "\tGLESv2\n";
 				$sProjectLibraries .= "\tEGL\n";

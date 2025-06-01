@@ -17,6 +17,8 @@
 				mkdir($sBaseDirectory . "/" . $pProject->GetName());
 		}
 
+		$sDefineArray = $pSolution->GetDefineArray($sAction);
+
 		// Makefile
 		$sOutput = "";
 
@@ -136,7 +138,10 @@
 								$sOutput .= " -DEMSCRIPTEN";
 
 							if ($sConfiguration == CONFIGURATION_DEBUG)
-								$sOutput .= " -DNB_DEBUG";
+								$sOutput .= " -DNB_DEBUG -DDEBUG";
+
+							for ($j = 0; $j < count($sDefineArray); $j++)
+								$sOutput .= " -D" . $sDefineArray[$j];
 							
 						$sOutput .= "\n"; // -D_EMSCRIPTEN -D_CRT_SECURE_NO_WARNINGS\n";
 
@@ -174,7 +179,7 @@
 						//$sOutput .= "  ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)\n";
 						if ($sAction == ACTION_EMSCRIPTEN_GMAKE)
 						{
-							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . " -Wno-dollar-in-identifier-extension\n";
+							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . " -Wno-dollar-in-identifier-extension -Wno-typedef-redefinition -Wno-sign-compare -Wno-unused-but-set-variable -Wno-unused-variable -Wno-pedantic\n";
 						}
 						else
 						{
@@ -244,9 +249,9 @@
 						if ($sAction == ACTION_EMSCRIPTEN_GMAKE)
 						{
 							if ($pProject->GetKind() == KIND_STATIC_LIBRARY)
-								$sOutput .= "  LINKCMD = $(CC) \$(OBJECTS) -o \$(TARGET)\n";
+								$sOutput .= "  LINKCMD = $(CC) -r -o \$(TARGET) \$(OBJECTS)\n";
 							elseif ($pProject->GetKind() == KIND_WORKER)
-								$sOutput .= "  LINKCMD = $(CC)  -o \$(TARGET) \$(OBJECTS) \$(RESOURCES) \$(ARCH) \$(ALL_LDFLAGS) \$(LIBS) -s TOTAL_MEMORY=268435456 -s EXPORTED_FUNCTIONS=\"['_nbJob_Test', '_nbSvgGroup_Prepare_Job', '_nbBfxrLibrary_Prepare_Job']\" -s BUILD_AS_WORKER=1\n"; // -s ASSERTIONS=2 -s SAFE_HEAP=1\n";
+								$sOutput .= "  LINKCMD = $(CC) -o \$(TARGET) \$(OBJECTS) \$(RESOURCES) \$(ARCH) \$(ALL_LDFLAGS) \$(LIBS) -s TOTAL_MEMORY=268435456 -s EXPORTED_FUNCTIONS=\"['_nbJob_Test', '_nbSvgGroup_Prepare_Job', '_nbBfxrLibrary_Prepare_Job']\" -s BUILD_AS_WORKER=1\n"; // -s ASSERTIONS=2 -s SAFE_HEAP=1\n";
 							else
 								$sOutput .= "  LINKCMD = $(CC) -o \$(TARGET) \$(OBJECTS) \$(RESOURCES) \$(ARCH) \$(ALL_LDFLAGS) \$(LIBS) -s TOTAL_MEMORY=268435456 -s NO_EXIT_RUNTIME=1 -s AGGRESSIVE_VARIABLE_ELIMINATION=1\n"; // -s ASSERTIONS=2 -s SAFE_HEAP=1\n";
 								//16777216 = 16mb
@@ -372,7 +377,10 @@
 
 				if ($xFile["sExtension"] == "c" || $xFile["sExtension"] == "cpp")
 				{
-					$sOutput .= "$(OBJDIR)/" . str_replace(array(".cpp", ".c"), array(".o", ".o"), $sPathArray[$nIndex] . $xFile["sName"]) . ": " . $sDirectory . $xFile["sName"] . "\n";
+					// somewhat hax now? replacing `$sDirectory . $xFile["sName"]`
+					$sFileRelativePath = ProjectGen_GetRelativePath(realpath($sBaseDirectory . "/" . $pProject->GetName()), $xFile["sPath"]);
+
+					$sOutput .= "$(OBJDIR)/" . str_replace(array(".cpp", ".c"), array(".o", ".o"), $sPathArray[$nIndex] . $xFile["sName"]) . ": " . $sFileRelativePath . "\n";
 						$sOutput .= "\t@echo $(notdir $<)\n";
 						$sOutput .= "\t$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o \"$@\" -MF $(@:%.o=%.d) -c \"$<\"\n\n";
 				}
