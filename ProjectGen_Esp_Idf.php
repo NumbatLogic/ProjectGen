@@ -79,7 +79,7 @@
 					$sFileArray = ProjectGen_FlattenFileArray($pProject->m_xFileArray, ".");
 					foreach ($sFileArray as $sFile)
 					{
-						if (strstr($sFile, ".c") !== FALSE)
+						if (strstr($sFile, ".c") !== FALSE || strstr($sFile, ".cpp") !== FALSE)
 							$sOutput .= " \"" . ProjectGen_GetRelativePath(realpath($sProjectDirectory), $pProject->GetBaseDirectory() . "/" . $sFile) . "\"";
 
 					}
@@ -127,7 +127,7 @@
 
 
 
-				$sOutput .= " REQUIRES esp_event esp_timer esp_wifi nvs_flash fatfs sdmmc";
+				$sOutput .= " REQUIRES esp_event esp_timer esp_wifi nvs_flash fatfs sdmmc driver";
 
 				$sDependancyArray = $pProject->GetDependancyArray();
 				for ($j = 0; $j < count($sDependancyArray); $j++)
