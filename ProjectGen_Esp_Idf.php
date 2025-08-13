@@ -76,13 +76,71 @@
 			{
 				$sOutput = "";
 				$sOutput .= "idf_component_register(SRCS";
-					$sFileArray = ProjectGen_FlattenFileArray($pProject->m_xFileArray, ".");
+
+
+
+					$xFileArray = array($pProject->m_xFileArray);
+					$sDirectoryArray = array(ProjectGen_GetRelativePath(realpath($sBaseDirectory . "/" . $pProject->GetName()), $pProject->GetBaseDirectory()));
+					$nFileIndex = array(0);
+					$sPathArray = array("");
+		
+					while (count($xFileArray) > 0)
+					{
+						$nIndex = count($xFileArray)-1;
+		
+						if ($nFileIndex[$nIndex] >= count($xFileArray[$nIndex]))
+						{
+							array_pop($xFileArray);
+							array_pop($sDirectoryArray);
+							array_pop($nFileIndex);
+							array_pop($sPathArray);
+							continue;
+						}
+		
+						$xFile = $xFileArray[$nIndex][$nFileIndex[$nIndex]];
+						$sDirectory = $sDirectoryArray[$nIndex];
+		
+						if ($xFile["sType"] == FILE_TYPE_DIRECTORY)
+						{
+							$xFileArray[] = $xFile["xFileArray"];
+							$sDirectoryArray[] = $sDirectory . $xFile["sName"] . "/";
+							$nFileIndex[] = 0;
+							$sPathArray[] = $sPathArray[$nIndex] . $xFile["sName"] . "_";
+		
+							$nFileIndex[$nIndex]++;
+							continue;
+						}
+		
+						if ($xFile["sExtension"] == "c" || $xFile["sExtension"] == "cpp")
+						{
+							// somewhat hax now? replacing `$sDirectory . $xFile["sName"]`
+							$sFileRelativePath = ProjectGen_GetRelativePath(realpath($sProjectDirectory), $xFile["sPath"]);
+
+							//echo realpath($sProjectDirectory) . " ~ " . $xFile["sPath"] . " -> " . $sFileRelativePath . "\n";
+
+
+
+							
+		
+							$sOutput .= " \"" . $sFileRelativePath . "\"";
+						}
+		
+						$nFileIndex[$nIndex]++;
+					}
+
+
+					/*$sFileArray = ProjectGen_FlattenFileArray($pProject->m_xFileArray, ".");
 					foreach ($sFileArray as $sFile)
 					{
 						if (strstr($sFile, ".c") !== FALSE || strstr($sFile, ".cpp") !== FALSE)
-							$sOutput .= " \"" . ProjectGen_GetRelativePath(realpath($sProjectDirectory), $pProject->GetBaseDirectory() . "/" . $sFile) . "\"";
+						{
 
-					}
+							// $sFileRelativePath = ProjectGen_GetRelativePath(realpath($sBaseDirectory . "/" . $pProject->GetName()), $xFile["sPath"]);
+							echo realpath($sProjectDirectory) . " ~ " . $pProject->GetBaseDirectory() . "/----" . $sFile . "\n";
+							$sOutput .= " \"" . ProjectGen_GetRelativePath(realpath($sProjectDirectory), $pProject->GetBaseDirectory() . "/" . $sFile) . "\"";
+						}
+
+					}*/
 				$sOutput .= "\n";
 
 				$sOutput .= "\tINCLUDE_DIRS ";
