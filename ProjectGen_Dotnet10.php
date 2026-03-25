@@ -9,7 +9,7 @@
 		{
 			$pProject = $pSolution->m_pProjectArray[$i];
 
-			if ($pProject->GetKind() != KIND_STATIC_LIBRARY && $pProject->GetKind() != KIND_CONSOLE_APP)
+			if ($pProject->GetKind() != KIND_CONSOLE_APP)
 				continue;
 
 			$sCsprojDir = $sBaseDirectory . "/" . $pProject->GetName();
@@ -19,48 +19,10 @@
 			$sCsprojPath = $sCsprojDir . "/" . $pProject->GetName() . ".csproj";
 
 			$sAssemblyName = $pProject->GetName();
-			$sOutputType = ($pProject->GetKind() == KIND_CONSOLE_APP ? "Exe" : "Library");
+			$sOutputType = "Exe";
 
-			$sProjectReferenceBlock = "";
-			$sNuGetPackageBlock = "";
-			$sDependancyArray = $pProject->GetDependancyArray();
-			if (count($sDependancyArray) > 0)
-			{
-				$sProjectReferenceBlock .= "  <ItemGroup>\n";
-				for ($j = 0; $j < count($sDependancyArray); $j++)
-				{
-					$sDependancy = $sDependancyArray[$j];
-
-					$pDependancyProject = $pSolution->GetProjectByName($sDependancy);
-					if ($pDependancyProject)
-					{
-						$sRefCsprojDir = $sBaseDirectory . "/" . $pDependancyProject->GetName();
-						$sRefCsprojPath = $sRefCsprojDir . "/" . $pDependancyProject->GetName() . ".csproj";
-						$sRelRefPath = ProjectGen_GetRelativePath($sCsprojDir, $sRefCsprojPath);
-						$sRelRefPath = str_replace("\\", "/", $sRelRefPath);
-
-						$sProjectReferenceBlock .= "    <ProjectReference Include=\"" . $sRelRefPath . "\" />\n";
-						continue;
-					}
-
-					if (preg_match('/^([A-Za-z0-9_.-]+)_(.+)$/', $sDependancy, $m))
-					{
-						$sPackageName = $m[1];
-						$sVersion = $m[2];
-
-						$sNuGetPackageBlock .=
-							"  <ItemGroup>\n" .
-							"    <PackageReference Include=\"" . $sPackageName . "\" Version=\"" . $sVersion . "\" />\n" .
-							"  </ItemGroup>\n\n";
-						continue;
-					}
-					
-					echo "ProjectGen_Dotnet10_Output warning: unknown dependency token '" . $sDependancy . "' for project '" . $pProject->GetName() . "'\n";
-					continue;
-
-				}
-				$sProjectReferenceBlock .= "  </ItemGroup>\n\n";
-			}
+			$sNuGetPackages = array();
+			$sRecursiveDependancyArray = ProjectGen_GetRecursiveDependancyArray($pSolution, $pProject);
 
 			$sOutput =
 				"<Project Sdk=\"Microsoft.NET.Sdk\">\n" .
@@ -78,9 +40,75 @@
 
 			$sOutput .= "  </ItemGroup>\n";
 
-			$sOutput .= "\n" . $sProjectReferenceBlock;
-			
-			$sOutput .= $sNuGetPackageBlock;
+			$sAddedStaticLibProjects = array();
+			if (count($sRecursiveDependancyArray) > 0)
+			{
+				$sOutput .= "  <ItemGroup>\n";
+				for ($j = 0; $j < count($sRecursiveDependancyArray); $j++)
+				{
+					$sDependancy = $sRecursiveDependancyArray[$j];
+					$pDependancyProject = $pSolution->GetProjectByName($sDependancy);
+					if (!$pDependancyProject)
+						continue;
+					if ($pDependancyProject->GetKind() != KIND_STATIC_LIBRARY)
+						continue;
+					if (isset($sAddedStaticLibProjects[$pDependancyProject->GetName()]))
+						continue;
+					$sAddedStaticLibProjects[$pDependancyProject->GetName()] = true;
+
+					ProjectGen_Dotnet10_RecursiveAppendFiles($pDependancyProject->m_xFileArray, $sCsprojDir, $sOutput);
+
+					$sLibraryDependancyArray = $pDependancyProject->GetDependancyArray();
+					for ($k = 0; $k < count($sLibraryDependancyArray); $k++)
+					{
+						$sLibraryDependency = $sLibraryDependancyArray[$k];
+						if ($pSolution->GetProjectByName($sLibraryDependency))
+							continue;
+
+						if (preg_match('/^([A-Za-z0-9_.-]+)_(.+)$/', $sLibraryDependency, $m))
+						{
+							$sPackageName = $m[1];
+							$sVersion = $m[2];
+							$sKey = $sPackageName . "|" . $sVersion;
+							if (!isset($sNuGetPackages[$sKey]))
+								$sNuGetPackages[$sKey] = array("name" => $sPackageName, "version" => $sVersion);
+							continue;
+						}
+
+						echo "ProjectGen_Dotnet10_Output warning: unknown dependency token '" . $sLibraryDependency . "' for project '" . $pDependancyProject->GetName() . "'\n";
+					}
+				}
+				$sOutput .= "  </ItemGroup>\n";
+			}
+
+			$sDependancyArray = $pProject->GetDependancyArray();
+			for ($j = 0; $j < count($sDependancyArray); $j++)
+			{
+				$sDependancy = $sDependancyArray[$j];
+
+				if ($pSolution->GetProjectByName($sDependancy))
+					continue;
+
+				if (preg_match('/^([A-Za-z0-9_.-]+)_(.+)$/', $sDependancy, $m))
+				{
+					$sPackageName = $m[1];
+					$sVersion = $m[2];
+					$sKey = $sPackageName . "|" . $sVersion;
+					if (!isset($sNuGetPackages[$sKey]))
+						$sNuGetPackages[$sKey] = array("name" => $sPackageName, "version" => $sVersion);
+					continue;
+				}
+
+				echo "ProjectGen_Dotnet10_Output warning: unknown dependency token '" . $sDependancy . "' for project '" . $pProject->GetName() . "'\n";
+			}
+
+			foreach ($sNuGetPackages as $sPackage)
+			{
+				$sOutput .=
+					"  <ItemGroup>\n" .
+					"    <PackageReference Include=\"" . $sPackage["name"] . "\" Version=\"" . $sPackage["version"] . "\" />\n" .
+					"  </ItemGroup>\n\n";
+			}
 
 			$sOutput .=
 				"</Project>\n";
