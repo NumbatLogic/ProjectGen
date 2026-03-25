@@ -88,12 +88,12 @@
 			if ($sAction == ACTION_EMSCRIPTEN_GMAKE)
 			{
 				$sOutput .= "CC = emcc\n";
-			//	$sOutput .= "CXX = emcc\n";
+				$sOutput .= "CXX = emcc\n";
 			//	$sOutput .= "AR = emcc\n\n";
 			}
 			else
 			{
-				$sOutput .= "CC = gcc\n";
+				$sOutput .= "CC = gcc\n"; // -std=c23
 				$sOutput .= "CXX = g++\n";
 			//	$sOutput .= "AR = ar\n\n";
 			}
@@ -182,7 +182,7 @@
 							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g") . " " . implode(" ", $pProject->GetBuildOptionArray($sConfiguration, $sArchitecture)) . " -Wno-dollar-in-identifier-extension -Wno-typedef-redefinition -Wno-sign-compare -Wno-unused-but-set-variable -Wno-unused-variable -Wno-pedantic\n";
 						}
 						else
-						{
+						{ 
 							$sOutput .= "  ALL_CFLAGS += $(CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) $(ARCH) -Werror " . ($sConfiguration == CONFIGURATION_RELEASE ? " -O3" : "-g");
 							switch ($sArchitecture)
 							{
@@ -377,12 +377,16 @@
 
 				if ($xFile["sExtension"] == "c" || $xFile["sExtension"] == "cpp")
 				{
+					$sCompiler = "$(CC)";
+					if ($xFile["sExtension"] == "cpp")
+						$sCompiler = "$(CXX)";
+
 					// somewhat hax now? replacing `$sDirectory . $xFile["sName"]`
 					$sFileRelativePath = ProjectGen_GetRelativePath(realpath($sBaseDirectory . "/" . $pProject->GetName()), $xFile["sPath"]);
 
 					$sOutput .= "$(OBJDIR)/" . str_replace(array(".cpp", ".c"), array(".o", ".o"), $sPathArray[$nIndex] . $xFile["sName"]) . ": " . $sFileRelativePath . "\n";
 						$sOutput .= "\t@echo $(notdir $<)\n";
-						$sOutput .= "\t$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o \"$@\" -MF $(@:%.o=%.d) -c \"$<\"\n\n";
+						$sOutput .= "\t$(SILENT) " . $sCompiler . " $(ALL_CFLAGS) $(FORCE_INCLUDE) -o \"$@\" -MF $(@:%.o=%.d) -c \"$<\"\n\n";
 				}
 
 				$nFileIndex[$nIndex]++;

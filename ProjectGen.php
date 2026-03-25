@@ -9,6 +9,7 @@
 	define("ACTION_LINUX_GMAKE", "linux_gmake");
 	define("ACTION_ESP_IDF", "esp_idf");
 	define("ACTION_CMAKE", "cmake");
+	define("ACTION_DOTNET_10", "dotnet10");
 
 	define("CONFIGURATION_DEBUG", "debug");
 	define("CONFIGURATION_RELEASE", "release");
@@ -41,10 +42,23 @@
 				case ACTION_LINUX_GMAKE: return ACTION_LINUX_GMAKE;
 				case ACTION_ESP_IDF: return ACTION_ESP_IDF;
 				case ACTION_CMAKE: return ACTION_CMAKE;
+				case ACTION_DOTNET_10: return ACTION_DOTNET_10;
 			}
 		}
 
 		throw new Exception("No action!");
+	}
+
+	function ProjectGen_ActionIsCS($sAction)
+	{
+		return $sAction == ACTION_DOTNET_10;
+	}
+
+	function ProjectGen_GetSourceRegex($sAction)
+	{
+		if (ProjectGen_ActionIsCS($sAction))
+			return "/\\.cs$/";
+		return "/\\.h$|\\.c$|\\.hpp$|\\.cpp$/";
 	}
 
 	function ProjectGen_HashGuid($sString)
@@ -198,6 +212,7 @@
 	include_once dirname(__FILE__) . "/ProjectGen_Gradle.php";
 	include_once dirname(__FILE__) . "/ProjectGen_Esp_Idf.php";
 	include_once dirname(__FILE__) . "/ProjectGen_Cmake.php";
+	include_once dirname(__FILE__) . "/ProjectGen_Dotnet10.php";
 
 	function ProjectGen($pSolution)
 	{
@@ -495,6 +510,10 @@
 		{
 			ProjectGen_Cmake_Output($pSolution, $sAction);
 		}
+		else if ($sAction == ACTION_DOTNET_10)
+		{
+			ProjectGen_Dotnet10_Output($pSolution, $sAction);
+		}
 	}
 
 
@@ -576,46 +595,51 @@
 		return $pDependancyArray;
 	}*/
 	
-	//http://stackoverflow.com/questions/2637945/getting-relative-path-from-absolute-path-in-php
 	function ProjectGen_GetRelativePath($from, $to)
 	{
 		if (!is_string($to))
 			throw new Exception("Not a string!");
-			
-	//	var_dump($to);
 
-		//echo $from . " => " . $to;
-		// some compatibility fixes for Windows paths
-		$from = is_dir($from) ? rtrim($from, '\/') . '/' : $from;
-		$to   = is_dir($to)   ? rtrim($to, '\/') . '/'   : $to;
-		$from = str_replace('\\', '/', $from);
-		$to   = str_replace('\\', '/', $to);
-
-		$from     = explode('/', $from);
-		$to       = explode('/', $to);
-		$relPath  = $to;
-
-		foreach($from as $depth => $dir) {
-			// find first non-matching dir
-			if($dir === $to[$depth]) {
-				// ignore this directory
-				array_shift($relPath);
-			} else {
-				// get number of remaining dirs to $from
-				$remaining = count($from) - $depth;
-				if($remaining > 1) {
-					// add traversals up to first matching dir
-					$padLength = (count($relPath) + $remaining - 1) * -1;
-					$relPath = array_pad($relPath, $padLength, '..');
-					break;
-				} else {
-					$relPath[0] = './' . $relPath[0];
-				}
-			}
+		$fromResolved = realpath($from);
+		if ($fromResolved === false)
+		{
+			$fromResolved = $from;
+			if (!preg_match("#^(/|[A-Za-z]:/)#",$fromResolved))
+				$fromResolved = getcwd() . "/" . $fromResolved;
 		}
 
-		//echo " ~~~ " . implode('/', $relPath) . "\n";
-		return implode('/', $relPath);
+		$toResolved = realpath($to);
+		if ($toResolved === false)
+		{
+			$toResolved = $to;
+			if (!preg_match("#^(/|[A-Za-z]:/)#",$toResolved))
+				$toResolved = getcwd() . "/" . $toResolved;
+		}
+
+		$fromResolved = str_replace("\\", "/", $fromResolved);
+		$toResolved = str_replace("\\", "/", $toResolved);
+
+		$fromResolved = rtrim($fromResolved, "/");
+		$toResolved = rtrim($toResolved, "/");
+
+		$fromParts = explode("/", $fromResolved);
+		$toParts = explode("/", $toResolved);
+
+		$i = 0;
+		$max = min(count($fromParts), count($toParts));
+		while ($i < $max && $fromParts[$i] === $toParts[$i])
+			$i++;
+
+		$relParts = array();
+		$upCount = count($fromParts) - $i;
+		for ($k = 0; $k < $upCount; $k++)
+			$relParts[] = "..";
+
+		$relParts = array_merge($relParts, array_slice($toParts, $i));
+		if (count($relParts) == 0)
+			return "./";
+
+		return implode("/", $relParts);
 	}
 
 
