@@ -58,7 +58,7 @@
 	{
 		if (ProjectGen_ActionIsCS($sAction))
 			return "/\\.cs$/";
-		return "/\\.h$|\\.c$|\\.hpp$|\\.cpp$/";
+		return "/\\.h$|\\.c$|\\.m$|\\.hpp$|\\.cpp$/";
 	}
 
 	function ProjectGen_HashGuid($sString)
