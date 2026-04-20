@@ -39,6 +39,10 @@
 		}
 
 
+		$sOutput = "";
+		$sOutput .= "CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y\n";
+		file_put_contents($sBaseDirectory . "/sdkconfig.defaults", $sOutput);
+
 
 		$sOutput = "";
 		$sOutput .= "# The following lines of boilerplate have to be in your project's\n";
@@ -61,9 +65,6 @@
 		$sOutput .= "include(\$ENV{IDF_PATH}/tools/cmake/project.cmake)\n";
 		$sOutput .= "project(" . $pSolution->GetName() . ")\n";
 		file_put_contents($sBaseDirectory . "/CMakeLists.txt", $sOutput);
-
-
-
 
 
 
